@@ -1,19 +1,15 @@
 const Jimp = require('jimp');
 const BFS = require('./BFS');
+const colors = require('./colors');
 
-const WHITE = 4294967295;
-const BLACK = 255;
-
-const RED = 4278190335;
-
-const BEFORE = 'BEFORE';
+const BACKGROUND = 'BACKGROUND';
 const BORDER = 'BORDER';
 // const AFTER = 'AFTER';
 
 
 exports.getClock = function (image, image_name) {
-  const border = getRedBorder(image, image_name);
-  const filled = fillClock(border, image_name);
+  const border = getRedBorder(image, image_name);  // return binary image with only the red border
+  const filled = fillClock(border, image_name);   // return binary image with the inside of the clock (the clock without border)
 
   return filled;
 };
@@ -23,74 +19,13 @@ function getRedBorder(image, image_name) {
   const RED = [139, 29, 45];
   let distance = getDistanceAllPixels(image, RED); // calculate the distance as space point from all pixels to a red color
   distance = normalizeDistance(distance); // make all distances to be between 0 and 255
-  image = recolor(image, distance);
-  image.write(`./result/${image_name}/border.jpg`);
+  image = recolor(image, distance);  // what is considered red becames black, all the rest is white
+  image = BFS.paintWhiteHoles(image); // small holes in between are painted black for a more solid clock
+  image = BFS.removeSmallPieces(image);  // Remove all the black areas except the clock's border
+  image.write(`./result/${image_name}/border.jpg`);  // on this path an image is saved showing the advance
   console.log('---', `${image_name}: border saved`);
-  // image = BFS.removeSmallPieces(image);
   return image;
 }
-
-
-// function getAreaColor(image, _i, _j) {
-//   const I = [_i - 1, _i + 1];
-//   const J = [_j - 1, _j + 1];
-//   let max = RED;
-//   for (let i = 0; i < I.length; i++) {
-//     const color = image.getPixelColor(I[i], _j);
-//     if (color !== WHITE && color !== BLACK && color > max) {
-//       console.log('entro');
-//       max = color;
-//     }
-//   }
-//   for (let j = 0; j < J.length; j++) {
-//     const color = image.getPixelColor(_i, J[j]);
-//     if (color !== WHITE && color !== BLACK && color > max) {
-//       console.log('entro');
-//       max = color;
-//     }
-//   }
-//   return max + 1;
-// }
-//
-// function notifyNeighbours(image, _i, _j, newColor) {
-//   const I = [_i - 1, _i, _i + 1];
-//   const J = [_j - 1, _j, _j + 1];
-//   for (let i = 0; i < I.length; i++) {
-//     for (let j = 0; j < J.length; j++) {
-//       const color = image.getPixelColor(I[i], J[j]);
-//       if (color !== WHITE && color !== BLACK && color < newColor) {
-//         image.setPixelColor(newColor, I[i], J[j]);
-//         notifyNeighbours(image, i[i], J[j], newColor);
-//       }
-//     }
-//   }
-// }
-
-// function divideInAreas(image) {
-//   const WIDTH = image.bitmap.width;
-//   const HEIGHT = image.bitmap.height;
-//   for (let i = 0; i < WIDTH; i++) {
-//     for (let j = 0; j < HEIGHT; j++) {
-//       const color = image.getPixelColor(i, j);
-//       const isWhite = color === WHITE;
-//       if (!isWhite) {
-//         const newColor = getAreaColor(image, i, j);
-//         image.setPixelColor(newColor, i, j);
-//         // notifyNeighbours(image, i, j, newColor);
-//       }
-//     }
-//   }
-//   return image;
-// }
-
-// function removeSmallPieces(image, image_name) {
-//   console.log('------', `${image_name}: save areas`);
-//   const areas = divideInAreas(image);
-//   // const oneArea = getBiggestArea(areas);
-//   areas.write(`./result/${image_name}/areas.jpg`);
-//   console.log('------', `${image_name}: areas saved`);
-//   return areas;
-// }
 
 
 function recolor(image, distance) {
@@ -104,10 +39,10 @@ function recolor(image, distance) {
 }
 
 function normalizeDistance(distance) {
-  const threshold = 70;
+  const threshold = 60;
   for (let i = 0; i < distance.length; i++) {
     for (let j = 0; j < distance[i].length; j++) {
-      distance[i][j] = distance[i][j] > threshold ? WHITE : BLACK;
+      distance[i][j] = distance[i][j] > threshold ? colors.WHITE : colors.BLACK;
     }
   }
   return distance;
@@ -130,8 +65,8 @@ function getDistanceAllPixels(image, ref) {
   return distance;
 }
 
-function inBefore(color, line, i, j) {
-  if (color === BLACK) {
+function inBackground(color, line, i, j) {
+  if (color === colors.BLACK) {
     line.status = BORDER;
     const p = {};
     p.start = j;
@@ -141,11 +76,11 @@ function inBefore(color, line, i, j) {
 }
 
 function inBorder(color, line, i, j) {
-  if (color === BLACK) {
+  if (color === colors.BLACK) {
     const p = getLastPoint(line);
     p.finish = j;
   } else {
-    line.status = BEFORE;
+    line.status = BACKGROUND;
   }
 }
 
@@ -188,13 +123,14 @@ function paintLines(image) {
   const HEIGHT = image.bitmap.height;
   for (let i = 0; i < WIDTH; i++) {
     const line = {
-      status: BEFORE,
+      status: BACKGROUND,
       points: [],
     };
     for (let j = 0; j < HEIGHT; j++) {
       const color = image.getPixelColor(i, j);
-      if (line.status === BEFORE) {
-        inBefore(color, line, i, j);
+      // status is binary, its in the backgroud (WHITE AREA) or in the border (BLACK AREA)
+      if (line.status === BACKGROUND) {
+        inBackground(color, line, i, j);
       } else {
         inBorder(color, line, i, j);
       }
@@ -205,7 +141,7 @@ function paintLines(image) {
         // image.setPixelColor(WHITE, i, k);
       }
       for (let k = borders.start; k < borders.finish; k++) {
-        image.setPixelColor(RED, i, k);
+        image.setPixelColor(colors.RED, i, k);
       }
       for (let k = borders.finish; k < HEIGHT; k++) {
         // image.setPixelColor(WHITE, i, k);
@@ -218,9 +154,8 @@ function paintLines(image) {
 
 function fillClock(image, image_name) {
   console.log('------', `${image_name}: save filled`);
-  const filled = paintLines(image);
+  const filled = paintLines(image);      // It goes for every line (horizontal) and paint the inner part of the clock
   image.write(`./result/${image_name}/filled.jpg`);
-
   console.log('------', `${image_name}: filled saved`);
   return filled;
 }

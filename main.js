@@ -5,12 +5,12 @@ const IMAGES = files.IMAGES;
 const path = files.PATH;
 
 
-for (var i = 0; i < IMAGES.length; i++) {
+for (let i = 0; i < IMAGES.length; i++) {
   console.log(IMAGES[i]);
-  processor.getHour(path + IMAGES[i], IMAGES[i]).then((image) =>{
-    console.log('termino');
+  processor.getHour(path + IMAGES[i], IMAGES[i]).then(() => {
+    console.log('-----Finished-----');
   }).catch((err) => {
     console.log('ERROR');
-      console.log(err);
+    console.log(err);
   });
 }
