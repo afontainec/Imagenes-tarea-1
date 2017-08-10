@@ -4,13 +4,10 @@ const BFS = require('./BFS');
 const WHITE = 4294967295;
 const BLACK = 255;
 
-const BROWN = 4294902015;
 const RED = 4278190335;
-const YELLOW = 16777215;
 
 const BEFORE = 'BEFORE';
 const BORDER = 'BORDER';
-const WITHIN = 'WITHIN';
 // const AFTER = 'AFTER';
 
 
@@ -27,9 +24,9 @@ function getRedBorder(image, image_name) {
   let distance = getDistanceAllPixels(image, RED); // calculate the distance as space point from all pixels to a red color
   distance = normalizeDistance(distance); // make all distances to be between 0 and 255
   image = recolor(image, distance);
-  // image.write(`./result/${image_name}/border.jpg`);
+  image.write(`./result/${image_name}/border.jpg`);
   console.log('---', `${image_name}: border saved`);
-  // image = removeSmallPieces(image, image_name);
+  // image = BFS.removeSmallPieces(image);
   return image;
 }
 
@@ -107,7 +104,7 @@ function recolor(image, distance) {
 }
 
 function normalizeDistance(distance) {
-  const threshold = 60;
+  const threshold = 70;
   for (let i = 0; i < distance.length; i++) {
     for (let j = 0; j < distance[i].length; j++) {
       distance[i][j] = distance[i][j] > threshold ? WHITE : BLACK;
@@ -220,7 +217,6 @@ function paintLines(image) {
 
 
 function fillClock(image, image_name) {
-  // image = paintHoles(image);
   console.log('------', `${image_name}: save filled`);
   const filled = paintLines(image);
   image.write(`./result/${image_name}/filled.jpg`);
