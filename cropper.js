@@ -4,27 +4,27 @@ const colors = require('./colors');
 
 // crop the area so that surrounds all the pixels with the segment_color
 exports.cropSegment = function (image, segment_color) {
-  const x1 = getMinX(image, segment_color);
-  const x2 = getMaxX(image, segment_color);
+  const x1 = getMinX(image, segment_color)[0];
+  const x2 = getMaxX(image, segment_color)[0];
 
-  const y1 = getMinY(image, segment_color);
-  const y2 = getMaxY(image, segment_color);
+  const y1 = getMinY(image, segment_color)[1];
+  const y2 = getMaxY(image, segment_color)[1];
   return [x1, y1, x2 - x1, y2 - y1];
 };
 
 function getMinX(image, segment_color) {
   const WIDTH = image.bitmap.width;
   const HEIGHT = image.bitmap.height;
-  let x = -1;
+  let x;
   for (let i = 0; i < WIDTH; i++) {
     for (let j = 0; j < HEIGHT; j++) {
       const color = image.getPixelColor(i, j);
       if (color === segment_color) {
-        x = i;
+        x = [i, j];
         break;
       }
     }
-    if (x >= 0) {
+    if (x !== undefined) {
       break;
     }
   }
@@ -34,16 +34,16 @@ function getMinX(image, segment_color) {
 function getMaxX(image, segment_color) {
   const WIDTH = image.bitmap.width;
   const HEIGHT = image.bitmap.height;
-  let x = -1;
+  let x;
   for (let i = WIDTH - 1; i >= 0; i--) {
     for (let j = 0; j < HEIGHT; j++) {
       const color = image.getPixelColor(i, j);
       if (color === segment_color) {
-        x = i;
+        x = [i, j];
         break;
       }
     }
-    if (x >= 0) {
+    if (x !== undefined) {
       break;
     }
   }
@@ -53,16 +53,16 @@ function getMaxX(image, segment_color) {
 function getMinY(image, segment_color) {
   const WIDTH = image.bitmap.width;
   const HEIGHT = image.bitmap.height;
-  let y = -1;
+  let y;
   for (let j = 0; j < HEIGHT; j++) {
     for (let i = 0; i < WIDTH; i++) {
       const color = image.getPixelColor(i, j);
       if (color === segment_color) {
-        y = j;
+        y = [i, j];
         break;
       }
     }
-    if (y >= 0) {
+    if (y !== undefined) {
       break;
     }
   }
@@ -72,21 +72,26 @@ function getMinY(image, segment_color) {
 function getMaxY(image, segment_color) {
   const WIDTH = image.bitmap.width;
   const HEIGHT = image.bitmap.height;
-  let y = -1;
+  let y;
   for (let j = HEIGHT - 1; j >= 0; j--) {
     for (let i = 0; i < WIDTH; i++) {
       const color = image.getPixelColor(i, j);
       if (color === segment_color) {
-        y = j;
+        y = [i, j];
         break;
       }
     }
-    if (y >= 0) {
+    if (y !== undefined) {
       break;
     }
   }
   return y;
 }
+
+exports.getMinX = getMinX;
+exports.getMaxX = getMaxX;
+exports.getMinY = getMinY;
+exports.getMaxY = getMaxY;
 
 
 exports.removeBackgroud = function (target, binary) {

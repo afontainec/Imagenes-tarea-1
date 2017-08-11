@@ -1,6 +1,7 @@
 const Jimp = require('jimp');
 const BFS = require('./BFS');
 const colors = require('./colors');
+const Point = require('./point');
 
 
 function getByColor(image, color, image_name) {
@@ -54,17 +55,8 @@ function getDistanceAllPixels(image, ref) {
       const color = image.getPixelColor(i, j);
       const rgba = Jimp.intToRGBA(color);
       const v = [rgba.r, rgba.g, rgba.b];
-      distance[i][j] = pointDistance(v, ref);
+      distance[i][j] = Point.distance(v, ref);
     }
   }
   return distance;
-}
-
-
-function pointDistance(p1, p2) {
-  let dist = 0;
-  for (let i = 0; i < 3; i++) {
-    dist += (p1[i] - p2[i]) * (p1[i] - p2[i]);
-  }
-  return Math.sqrt(dist);
 }
