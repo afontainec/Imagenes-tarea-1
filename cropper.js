@@ -101,7 +101,7 @@ exports.removeBackgroud = function (target, binary) {
     for (let j = 0; j < HEIGHT; j++) {
       const color = binary.getPixelColor(i, j);
       if (color === colors.WHITE) {
-        target.setPixelColor(colors.WHITE, i, j);
+        target.setPixelColor(colors.CYAN, i, j);
       }
     }
   }
