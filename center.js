@@ -6,27 +6,63 @@ const cropper = require('./cropper');
 
 exports.find = function (image, image_name, original) {
   const colorImage = original.clone();
-  getTimeBlocks(original, image_name);
-  const vertical = getVerticalDiameter(image, colorImage); // get the vertical diameter of the image
-  const horizontal = getHorizontalDiameter(image, colorImage); // get the horizontal diameter of the image
-  colorImage.write(`./result/${image_name}/3.Parameterized.jpg`); // on this path an image is saved showing the advance
-  return {
-    vertical,
-    horizontal,
-  };
+
+  getGreys(original, image_name);
+  getRedHandle(original, image_name);
+  // getWhites(original, image_name);
+
+  // getTimeBlocks(original, image_name);
+  // const vertical = getVerticalDiameter(image, colorImage); // get the vertical diameter of the image
+  // const horizontal = getHorizontalDiameter(image, colorImage); // get the horizontal diameter of the image
+  // colorImage.write(`./result/${image_name}/3.Parameterized.jpg`); // on this path an image is saved showing the advance
+  // return {
+  //   vertical,
+  //   horizontal,
+  // };
 };
+
+function getGreys(original, image_name) {
+  let image = original.clone();
+  const GREY = [80, 104, 90];
+  image = segmenter.getLargestByColor(image, GREY, 1, image_name);
+  image.write(`./result/${image_name}/7.testing_grey.jpg`);  // on this path an image is saved showing the advance
+  original = cropper.colorWithFilter(original, image, colors.BLUE);
+
+  original.write(`./result/${image_name}/6.testing_grey.jpg`);  // on this path an image is saved showing the advance
+}
+
+function getRedHandle(original, image_name) {
+  let image = original.clone();
+  const RED = [139, 29, 45];
+  const clusters_colors = [colors.PURPLE, colors.PURPLE, colors.PURPLE, colors.PURPLE, colors.BLACK];
+  image = segmenter.getByClusters(image, RED, 2, clusters_colors, image_name);
+  image.write(`./result/${image_name}/7.testing_red.jpg`);  // on this path an image is saved showing the advance
+  original = cropper.colorWithFilter(original, image, colors.RED);
+  original = cropper.colorWithFilter(original, image, colors.BLUE, colors.PURPLE);
+  original.write(`./result/${image_name}/6.testing_red.jpg`);  // on this path an image is saved showing the advance
+}
+
+function getWhites(original, image_name) {
+  let image = original.clone();
+  const WHITE = [255, 255, 255];
+  const clusters_colors = [colors.BLACK, colors.PURPLE, colors.BLUE, colors.RED, colors.CYAN];
+  image = segmenter.getByClusters(image, WHITE, 3, clusters_colors, image_name);
+  image.write(`./result/${image_name}/7.testing_white.jpg`);  // on this path an image is saved showing the advance
+
+  // original.write(`./result/${image_name}/6.testing.jpg`);  // on this path an image is saved showing the advance
+}
 
 
 function getTimeBlocks(original, image_name) {
   let image = original.clone();
   const BLACK = [25, 29, 28];
-  // const clusters_colors = [colors.RED, colors.YELLOW, colors.PURPLE];
-  // image = segmenter.getByClusters(image, BLACK, 80, clusters_colors, image_name);
-  image = segmenter.getByColor(image, BLACK, 80, image_name); // get binary image with BLACK whenever the is RED and the rest is white
-  image = BFS.removeLargest(image, colors.BLACK);
-  image = BFS.paintHoles(image, colors.BLACK, colors.WHITE, 200);
-  original = cropper.colorWithFilter(original, image, colors.BLUE);
-  image.write(`./result/${image_name}/7.testing.jpg`);  // on this path an image is saved showing the advance
+  const clusters_colors = [colors.BLACK, colors.PURPLE, colors.BLUE, colors.RED, colors.CYAN];
+  image = segmenter.getByClusters(image, BLACK, 4, clusters_colors, image_name);
+  // image = segmenter.getByColor(image, BLACK, 3, image_name); // get binary image with BLACK whenever the is RED and the rest is white
+  // image = BFS.removeLargest(image, colors.BLACK);
+  // image = BFS.paintHoles(image, colors.BLACK, colors.WHITE, 200);
+  // original = cropper.colorWithFilter(original, image, colors.BLUE);
+  image.write(`./result/${image_name}/8.testing.jpg`);  // on this path an image is saved showing the advance
 
   original.write(`./result/${image_name}/6.testing.jpg`);  // on this path an image is saved showing the advance
 }

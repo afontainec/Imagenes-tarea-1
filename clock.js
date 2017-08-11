@@ -19,6 +19,7 @@ function getRedBorder(original, image_name) {
   const RED = [139, 29, 45];
   image = segmenter.getLargestByColor(image, RED, 60, image_name); // get binary image with BLACK whenever the is RED and the rest is white
 
+
   console.log('---', `${image_name}: Crop image...`);
   const dimensions = cropper.cropSegment(image, colors.BLACK); // Crop image. only appear the clock
   original.crop(dimensions[0], dimensions[1], dimensions[2], dimensions[3]);
@@ -33,23 +34,20 @@ function getRedBorder(original, image_name) {
 
 function fillClock(original, image, image_name) {
   console.log('------', `${image_name}: getting innerClock...`);
-  image = paintLines(image); // It goes for every line (horizontal) and paint the inner part of the clock
+  const WHITE = [255, 255, 255];
+  image = segmenter.getLargestByColor(image, WHITE, 3, image_name); // get binary image where the inner part is black
+  // image = paintLines(image); // It goes for every line (horizontal) and paint the inner part of the clock
+  //
+  // image = BFS.removeSmallPieces(image, colors.BLACK);  // Remove noise
 
-  console.log('------', `${image_name}: innerClock segmented. Removing unwanted noise...`);
-  image = BFS.removeSmallPieces(image, colors.BLACK);  // Remove noise
-
-  console.log('------', `${image_name}: noise removed. Cropping image...`);
   const dim = cropper.cropSegment(image, colors.BLACK); // Crop image
   original.crop(dim[0], dim[1], dim[2], dim[3]);
   image.crop(dim[0], dim[1], dim[2], dim[3]);
-  console.log('------', `${image_name}: imaged Cropped.`);
 
-  console.log('------', `${image_name}: Removing background...`);
   original = cropper.removeBackgroud(original, image); // Set to white the unwanted background
-  console.log('------', `${image_name}: Ok.`);
 
   original.write(`./result/${image_name}/2.innerClock.jpg`);
-  console.log('------', `${image_name}: innerClock saved.`);
+  // console.log('------', `${image_name}: innerClock saved.`);
   return image;
 }
 

@@ -3,7 +3,7 @@ const colors = require('./colors');
 const WHITE = 0;
 const GREY = 1;
 const BLACK = 2;
-const HOLE_SIZE = 30;
+const HOLE_SIZE = 100;
 
 exports.removeSmallPieces = function (image, color) {
   const segments = findSegments(image, color);
@@ -83,6 +83,8 @@ function paintSegment(image, segment, color) {
     image.setPixelColor(color, segment[i].i, segment[i].j);
   }
 }
+
+exports.paintSegment = paintSegment;
 
 function removable(c1, sc, nodes, i, j) {
   return c1 === sc && !isIn(nodes, i, j);

@@ -1,6 +1,9 @@
-const Jimp = require('jimp');
+const array = [1, 2, 1, 3, 30, 31, 32, 29, 100, 4, 1];
+
+const clusters = require('./clusters');
 
 
-console.log(Jimp.rgbaToInt(129, 10, 163, 255));
-console.log(Jimp.rgbaToInt(70, 14, 87, 255));
-console.log(Jimp.rgbaToInt(3, 240, 149, 255));
+const p = clusters.get(array, 5);
+
+console.log('respuesta');
+console.log(p);

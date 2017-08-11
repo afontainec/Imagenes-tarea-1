@@ -109,13 +109,14 @@ exports.removeBackgroud = function (target, binaryImage) {
 };
 
 
-exports.colorWithFilter = function (target, binaryImage, color) {
+exports.colorWithFilter = function (target, binaryImage, color, searchColor) {
+  searchColor = searchColor || colors.BLACK;
   const WIDTH = binaryImage.bitmap.width;
   const HEIGHT = binaryImage.bitmap.height;
   for (let i = 0; i < WIDTH; i++) {
     for (let j = 0; j < HEIGHT; j++) {
       const binary_color = binaryImage.getPixelColor(i, j);
-      if (binary_color === colors.BLACK) {
+      if (binary_color === searchColor) {
         target.setPixelColor(color, i, j);
       }
     }
