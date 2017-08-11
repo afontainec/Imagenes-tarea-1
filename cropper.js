@@ -94,14 +94,29 @@ exports.getMinY = getMinY;
 exports.getMaxY = getMaxY;
 
 
-exports.removeBackgroud = function (target, binary) {
-  const WIDTH = binary.bitmap.width;
-  const HEIGHT = binary.bitmap.height;
+exports.removeBackgroud = function (target, binaryImage) {
+  const WIDTH = binaryImage.bitmap.width;
+  const HEIGHT = binaryImage.bitmap.height;
   for (let i = 0; i < WIDTH; i++) {
     for (let j = 0; j < HEIGHT; j++) {
-      const color = binary.getPixelColor(i, j);
+      const color = binaryImage.getPixelColor(i, j);
       if (color === colors.WHITE) {
         target.setPixelColor(colors.CYAN, i, j);
+      }
+    }
+  }
+  return target;
+};
+
+
+exports.colorWithFilter = function (target, binaryImage, color) {
+  const WIDTH = binaryImage.bitmap.width;
+  const HEIGHT = binaryImage.bitmap.height;
+  for (let i = 0; i < WIDTH; i++) {
+    for (let j = 0; j < HEIGHT; j++) {
+      const binary_color = binaryImage.getPixelColor(i, j);
+      if (binary_color === colors.BLACK) {
+        target.setPixelColor(color, i, j);
       }
     }
   }

@@ -23,6 +23,15 @@ exports.paintWhiteHoles = function (image) {
   return findAndPaint(image, colors.WHITE, colors.BLACK, HOLE_SIZE);
 };
 
+
+// paint all the holes of a size smaller than HOLE_SIZE
+exports.removeLargest = function (image, color) {
+  const segments = findSegments(image, color);
+  const index = getLargestSegment(segments);
+  paintSegment(image, segments[index], colors.WHITE);
+  return image;
+};
+
 // get the index of the largest segment
 function getLargestSegment(segments) {
   let length = -1;
@@ -48,6 +57,7 @@ function findAndPaint(image, segment_color, new_color, SIZE) {
   }
   return image;
 }
+exports.paintHoles = findAndPaint;
 
 function findSegments(image, segment_color) {
   const WIDTH = image.bitmap.width;
@@ -65,6 +75,8 @@ function findSegments(image, segment_color) {
   }
   return segments;
 }
+
+exports.findSegments = findSegments;
 
 function paintSegment(image, segment, color) {
   for (let i = 0; i < segment.length; i++) {

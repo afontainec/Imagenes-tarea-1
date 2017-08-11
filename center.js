@@ -1,16 +1,35 @@
 const colors = require('./colors');
 const Point = require('./point');
+const segmenter = require('./segmenter');
+const BFS = require('./BFS');
+const cropper = require('./cropper');
 
 exports.find = function (image, image_name, original) {
   const colorImage = original.clone();
+  getTimeBlocks(original, image_name);
   const vertical = getVerticalDiameter(image, colorImage); // get the vertical diameter of the image
   const horizontal = getHorizontalDiameter(image, colorImage); // get the horizontal diameter of the image
-  colorImage.write(`./result/${image_name}/2.5.Parameterized.jpg`); // on this path an image is saved showing the advance
+  colorImage.write(`./result/${image_name}/3.Parameterized.jpg`); // on this path an image is saved showing the advance
   return {
     vertical,
     horizontal,
   };
 };
+
+
+function getTimeBlocks(original, image_name) {
+  let image = original.clone();
+  const BLACK = [25, 29, 28];
+  // const clusters_colors = [colors.RED, colors.YELLOW, colors.PURPLE];
+  // image = segmenter.getByClusters(image, BLACK, 80, clusters_colors, image_name);
+  image = segmenter.getByColor(image, BLACK, 80, image_name); // get binary image with BLACK whenever the is RED and the rest is white
+  image = BFS.removeLargest(image, colors.BLACK);
+  image = BFS.paintHoles(image, colors.BLACK, colors.WHITE, 200);
+  original = cropper.colorWithFilter(original, image, colors.BLUE);
+  image.write(`./result/${image_name}/7.testing.jpg`);  // on this path an image is saved showing the advance
+
+  original.write(`./result/${image_name}/6.testing.jpg`);  // on this path an image is saved showing the advance
+}
 
 function getVerticalDiameter(image, original) {
   const top = getTop(image, colors.BLACK);
