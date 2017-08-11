@@ -3,16 +3,38 @@ const colors = require('./colors');
 const WHITE = 0;
 const GREY = 1;
 const BLACK = 2;
+const HOLE_SIZE = 30;
 
+exports.removeSmallPieces = function (image, color) {
+  const segments = findSegments(image, color);
 
-exports.removeSmallPieces = function (image) {
-  const segments = findSegments(image, colors.BLACK, colors.WHITE, 2000);
+  const index = getLargestSegment(segments);
+  for (let i = 0; i < segments.length; i++) {
+    const s = segments[i];
+    if (i !== index) { // make white all pieces except the largest one
+      paintSegment(image, s, colors.WHITE);
+    }
+  }
+  return image;
 };
 
 // paint all the holes of a size smaller than HOLE_SIZE
 exports.paintWhiteHoles = function (image) {
-  return findAndPaint(image, colors.WHITE, colors.BLACK, 30);
+  return findAndPaint(image, colors.WHITE, colors.BLACK, HOLE_SIZE);
 };
+
+// get the index of the largest segment
+function getLargestSegment(segments) {
+  let length = -1;
+  let index = -1;
+  for (let i = 0; i < segments.length; i++) {
+    if (segments[i].length > length) {
+      length = segments[i].length;
+      index = i;
+    }
+  }
+  return index;
+}
 
 /* Divides the pictures in connected areas who have the color segment_color. */
 function findAndPaint(image, segment_color, new_color, SIZE) {
