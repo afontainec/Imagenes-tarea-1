@@ -1,4 +1,5 @@
 // const Jimp = require('jimp');
+const colors = require('./colors');
 
 
 // crop the area so that surrounds all the pixels with the segment_color
@@ -86,3 +87,18 @@ function getMaxY(image, segment_color) {
   }
   return y;
 }
+
+
+exports.removeBackgroud = function (target, binary) {
+  const WIDTH = binary.bitmap.width;
+  const HEIGHT = binary.bitmap.height;
+  for (let i = 0; i < WIDTH; i++) {
+    for (let j = 0; j < HEIGHT; j++) {
+      const color = binary.getPixelColor(i, j);
+      if (color === colors.WHITE) {
+        target.setPixelColor(colors.WHITE, i, j);
+      }
+    }
+  }
+  return target;
+};
