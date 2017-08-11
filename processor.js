@@ -1,13 +1,15 @@
 const Clock = require('./clock');
 const Jimp = require('jimp');
-const Center = require('./center');
+// const Center = require('./center');
+const Handles = require('./handles');
 
 exports.getHour = function (path, image_name) {
   return new Promise((resolve, reject) => {
     openImage(path).then((image) => {
       const clock = Clock.get(image, image_name);  // get an image with the clock
-      const parameterizedClock = Center.find(clock, image_name, image);
-      resolve(parameterizedClock);
+      // const parameterizedClock = Center.find(clock, image_name, image);
+      const handles = Handles.get(image, image_name);
+      resolve(handles);
     }).catch((err) => {
       console.log(err);
       reject(err);

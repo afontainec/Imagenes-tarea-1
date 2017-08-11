@@ -17,7 +17,7 @@ exports.get = function (image, image_name) {
 function getRedBorder(original, image_name) {
   let image = original.clone();
   const RED = [139, 29, 45];
-  image = segmenter.getLargestByColor(image, RED, image_name); // get binary image with BLACK whenever the is RED and the rest is white
+  image = segmenter.getLargestByColor(image, RED, 60, image_name); // get binary image with BLACK whenever the is RED and the rest is white
 
   console.log('---', `${image_name}: Crop image...`);
   const dimensions = cropper.cropSegment(image, colors.BLACK); // Crop image. only appear the clock
@@ -25,7 +25,7 @@ function getRedBorder(original, image_name) {
   image.crop(dimensions[0], dimensions[1], dimensions[2], dimensions[3]);
   console.log('---', `${image_name}: Ok.`);
 
-  original.write(`./result/${image_name}/border.jpg`);  // on this path an image is saved showing the advance
+  original.write(`./result/${image_name}/1.border.jpg`);  // on this path an image is saved showing the advance
   console.log('---', `${image_name}: border saved`);
   return image;
 }
@@ -48,7 +48,7 @@ function fillClock(original, image, image_name) {
   original = cropper.removeBackgroud(original, image); // Set to white the unwanted background
   console.log('------', `${image_name}: Ok.`);
 
-  original.write(`./result/${image_name}/innerClock.jpg`);
+  original.write(`./result/${image_name}/2.innerClock.jpg`);
   console.log('------', `${image_name}: innerClock saved.`);
   return image;
 }

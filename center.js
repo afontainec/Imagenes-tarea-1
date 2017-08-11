@@ -25,7 +25,6 @@ function getHorizontalDiameter(image, original) {
 function paintDiameter(image, p1, p2, mainColor, centerColor) {
   Point.paintLineBetween(image, mainColor, p1, p2);
   const center = Point.midPoint(p1, p2);
-  console.log(center);
   image.setPixelColor(centerColor, center[0], center[1]);
   image.setPixelColor(centerColor, p1[0], p1[1]);
   image.setPixelColor(centerColor, p2[0], p2[1]);

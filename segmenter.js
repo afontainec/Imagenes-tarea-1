@@ -4,18 +4,20 @@ const colors = require('./colors');
 const Point = require('./point');
 
 
-function getByColor(image, color, image_name) {
+function getByColor(image, color, threshold, image_name) {
   console.log('---', `${image_name}: computing border...`);
   let distance = getDistanceAllPixels(image, color); // calculate the distance as space point from all pixels to the given color
-  distance = normalizeDistance(distance); // make all distances to be between 0 and 255
+  distance = normalizeDistance(distance, threshold); // make all distances to be between 0 and 255
   image = recolor(image, distance);  // what is considered to be the color becames black, all the rest are white
   console.log('---', `${image_name}: border detected, cleaning it up`);
   image = BFS.paintWhiteHoles(image); // small holes in between are painted black for a less noisy image
   return image;
 }
 
-exports.getLargestByColor = function (image, color, image_name) {
-  image = getByColor(image, color, image_name);
+exports.getByColor = getByColor;
+
+exports.getLargestByColor = function (image, color, threshold, image_name) {
+  image = getByColor(image, color, threshold, image_name);
   console.log('---', `${image_name}: cleaned. Removing unwanted segments...`);
   image = BFS.removeSmallPieces(image, colors.BLACK);  // Remove all the black areas except the largest one border
   console.log('---', `${image_name}: Ok.`);
@@ -34,8 +36,7 @@ function recolor(image, distance) {
   return image;
 }
 
-function normalizeDistance(distance) {
-  const threshold = 60;
+function normalizeDistance(distance, threshold) {
   for (let i = 0; i < distance.length; i++) {
     for (let j = 0; j < distance[i].length; j++) {
       distance[i][j] = distance[i][j] > threshold ? colors.WHITE : colors.BLACK;
