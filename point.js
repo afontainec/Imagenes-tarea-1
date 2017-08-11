@@ -33,4 +33,5 @@ exports.paintLineBetween = function (image, color, p1, p2) {
     const y = (line.m * i) + line.c;
     image.setPixelColor(color, x, y);
   }
+  return line;
 };

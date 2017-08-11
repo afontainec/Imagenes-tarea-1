@@ -2,10 +2,14 @@ const colors = require('./colors');
 const Point = require('./point');
 
 exports.find = function (image, image_name, original) {
-  const vertDiameter = getVerticalDiameter(image, original);
-  const horizDiameter = getHorizontalDiameter(image, original);
-  original.write(`./result/${image_name}/parameterized.jpg`);  // on this path an image is saved showing the advance
-  return image;
+  const colorImage = original.clone();
+  const vertical = getVerticalDiameter(image, colorImage); // get the vertical diameter of the image
+  const horizontal = getHorizontalDiameter(image, colorImage); // get the horizontal diameter of the image
+  colorImage.write(`./result/${image_name}/2.5.Parameterized.jpg`); // on this path an image is saved showing the advance
+  return {
+    vertical,
+    horizontal,
+  };
 };
 
 function getVerticalDiameter(image, original) {
@@ -23,12 +27,13 @@ function getHorizontalDiameter(image, original) {
 }
 
 function paintDiameter(image, p1, p2, mainColor, centerColor) {
-  Point.paintLineBetween(image, mainColor, p1, p2);
+  const diameter = Point.paintLineBetween(image, mainColor, p1, p2);
   const center = Point.midPoint(p1, p2);
   image.setPixelColor(centerColor, center[0], center[1]);
   image.setPixelColor(centerColor, p1[0], p1[1]);
   image.setPixelColor(centerColor, p2[0], p2[1]);
-  return image;
+  diameter.center = center;
+  return diameter;
 }
 
 
