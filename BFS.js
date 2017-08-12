@@ -19,8 +19,9 @@ exports.removeSmallPieces = function (image, color) {
 };
 
 // paint all the holes of a size smaller than HOLE_SIZE
-exports.paintWhiteHoles = function (image) {
-  return findAndPaint(image, colors.WHITE, colors.BLACK, HOLE_SIZE);
+exports.paintWhiteHoles = function (image, size) {
+  const maxSize = size || HOLE_SIZE;
+  return findAndPaint(image, colors.WHITE, colors.BLACK, maxSize);
 };
 
 

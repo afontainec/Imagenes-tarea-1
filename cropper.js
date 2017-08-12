@@ -3,7 +3,7 @@ const colors = require('./colors');
 
 
 // crop the area so that surrounds all the pixels with the segment_color
-exports.cropSegment = function (image, segment_color) {
+exports.getBoundingBox = function (image, segment_color) {
   const x1 = getMinX(image, segment_color)[0];
   const x2 = getMaxX(image, segment_color)[0];
 
@@ -101,7 +101,7 @@ exports.removeBackgroud = function (target, binaryImage) {
     for (let j = 0; j < HEIGHT; j++) {
       const color = binaryImage.getPixelColor(i, j);
       if (color === colors.WHITE) {
-        target.setPixelColor(colors.CYAN, i, j);
+        target.setPixelColor(colors.BLUE, i, j);
       }
     }
   }

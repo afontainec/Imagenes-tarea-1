@@ -1,17 +1,20 @@
 const colors = require('./colors');
 const Point = require('./point');
 const segmenter = require('./segmenter');
+const Jimp = require('jimp');
 const BFS = require('./BFS');
 const cropper = require('./cropper');
 
 exports.find = function (image, image_name, original) {
   const colorImage = original.clone();
 
-  getGreys(original, image_name);
-  getRedHandle(original, image_name);
+  let newImage = getRedHandle(original, image_name);
   // getWhites(original, image_name);
 
-  // getTimeBlocks(original, image_name);
+  newImage = getTimeBlocks(original, newImage, image_name);
+
+  // getGreys(original, image_name);
+
   // const vertical = getVerticalDiameter(image, colorImage); // get the vertical diameter of the image
   // const horizontal = getHorizontalDiameter(image, colorImage); // get the horizontal diameter of the image
   // colorImage.write(`./result/${image_name}/3.Parameterized.jpg`); // on this path an image is saved showing the advance
@@ -21,50 +24,88 @@ exports.find = function (image, image_name, original) {
   // };
 };
 
-function getGreys(original, image_name) {
-  let image = original.clone();
-  const GREY = [80, 104, 90];
-  image = segmenter.getLargestByColor(image, GREY, 1, image_name);
-  image.write(`./result/${image_name}/7.testing_grey.jpg`);  // on this path an image is saved showing the advance
-  original = cropper.colorWithFilter(original, image, colors.BLUE);
+// function getGreys(original, image_name) {
+//   let image = original.clone();
+//   const BLACK = [25, 29, 28];
+//   const GREY = [80, 104, 90];
+//   const RED = [139, 29, 45];
+//   const GREEN = [0, 255, 0];
+//   const BLUE = [31, 91, 163];
+//   // const WHITE = [100, 124, 110];
+//
+//   image = cropper.colorWithFilter(image, original, colors.GREEN, colors.RED);
+//   image = cropper.colorWithFilter(image, original, colors.BLUE, colors.BLUE);
+//   image = cropper.colorWithFilter(image, original, colors.GREEN, colors.CYAN);
+//   image = cropper.colorWithFilter(image, original, colors.GREEN, colors.PURPLE);
+//
+//   const searchColors = [BLACK, GREY, RED, GREEN, BLUE];
+//   const reColors = [colors.BLACK, colors.GREY, colors.RED, colors.GREEN, colors.BLUE];
+//
+//   image.write(`./result/${image_name}/7.testing_grey_before.jpg`); // on this path an image is saved showing the advance
+//
+//   const WIDTH = image.bitmap.width;
+//   const HEIGHT = image.bitmap.height;
+//   for (let i = 0; i < WIDTH; i++) {
+//     for (let j = 0; j < HEIGHT; j++) {
+//       let distance = 10000000;
+//       const color = image.getPixelColor(i, j);
+//       const rgba = Jimp.intToRGBA(color);
+//       const v = [rgba.r, rgba.g, rgba.b];
+//       let newColor;
+//       for (let k = 0; k < searchColors.length; k++) {
+//         const ref = searchColors[k];
+//         if (Point.distance(v, ref) < distance) {
+//           distance = Point.distance(v, ref);
+//           newColor = reColors[k];
+//         }
+//       }
+//       image.setPixelColor(newColor, i, j);
+//     }
+//   }
 
-  original.write(`./result/${image_name}/6.testing_grey.jpg`);  // on this path an image is saved showing the advance
-}
+//   BFS.paintHoles(image, colors.RED, colors.BLUE, 2000);
+//   BFS.paintHoles(image, colors.BLACK, colors.BLUE, 200);
+//   BFS.paintHoles(image, colors.GREY, colors.BLUE, 100);
+//   BFS.paintHoles(image, colors.BLUE, colors.GREY, 1000);
+//
+//   original = cropper.colorWithFilter(original, image, colors.YELLOW, colors.BLUE);
+//
+//
+//   image.write(`./result/${image_name}/7.testing_grey.jpg`); // on this path an image is saved showing the advance
+//   original.write(`./result/${image_name}/7.testing_grey.jpg`); // on this path an image is saved showing the advance
+// }
 
 function getRedHandle(original, image_name) {
   let image = original.clone();
   const RED = [139, 29, 45];
-  const clusters_colors = [colors.PURPLE, colors.PURPLE, colors.PURPLE, colors.PURPLE, colors.BLACK];
-  image = segmenter.getByClusters(image, RED, 2, clusters_colors, image_name);
-  image.write(`./result/${image_name}/7.testing_red.jpg`);  // on this path an image is saved showing the advance
-  original = cropper.colorWithFilter(original, image, colors.RED);
-  original = cropper.colorWithFilter(original, image, colors.BLUE, colors.PURPLE);
-  original.write(`./result/${image_name}/6.testing_red.jpg`);  // on this path an image is saved showing the advance
-}
+  image = segmenter.getLargestByColor(image, RED, 80, image_name);
+  original = cropper.colorWithFilter(original, image, colors.CYAN);
+  image = cropper.colorWithFilter(image, image, colors.CYAN);
 
-function getWhites(original, image_name) {
-  let image = original.clone();
-  const WHITE = [255, 255, 255];
-  const clusters_colors = [colors.BLACK, colors.PURPLE, colors.BLUE, colors.RED, colors.CYAN];
-  image = segmenter.getByClusters(image, WHITE, 3, clusters_colors, image_name);
-  image.write(`./result/${image_name}/7.testing_white.jpg`);  // on this path an image is saved showing the advance
 
-  // original.write(`./result/${image_name}/6.testing.jpg`);  // on this path an image is saved showing the advance
+  original.write(`./result/${image_name}/3.red_handle.jpg`); // on this path an image is saved showing the advance
+  image.write(`./result/${image_name}/3.red_handle_outline.jpg`); // on this path an image is saved showing the advance
+
+  return image;
 }
 
 
-function getTimeBlocks(original, image_name) {
+function getTimeBlocks(original, outlineImage, image_name) {
   let image = original.clone();
-  const BLACK = [25, 29, 28];
-  const clusters_colors = [colors.BLACK, colors.PURPLE, colors.BLUE, colors.RED, colors.CYAN];
-  image = segmenter.getByClusters(image, BLACK, 4, clusters_colors, image_name);
-  // image = segmenter.getByColor(image, BLACK, 3, image_name); // get binary image with BLACK whenever the is RED and the rest is white
-  // image = BFS.removeLargest(image, colors.BLACK);
-  // image = BFS.paintHoles(image, colors.BLACK, colors.WHITE, 200);
-  // original = cropper.colorWithFilter(original, image, colors.BLUE);
-  image.write(`./result/${image_name}/8.testing.jpg`);  // on this path an image is saved showing the advance
+  image = segmenter.getBlackHandles(image, 90, image_name);
+  original = cropper.colorWithFilter(original, image, colors.PURPLE, colors.PURPLE);
+  original = cropper.colorWithFilter(original, image, colors.YELLOW, colors.YELLOW);
+  outlineImage = cropper.colorWithFilter(outlineImage, image, colors.PURPLE, colors.PURPLE);
+  outlineImage = cropper.colorWithFilter(outlineImage, image, colors.YELLOW, colors.YELLOW);
 
-  original.write(`./result/${image_name}/6.testing.jpg`);  // on this path an image is saved showing the advance
+  const dim = cropper.getBoundingBox(image, colors.YELLOW);
+  image.crop(dim[0], dim[1], dim[2], dim[3]);
+  original.crop(dim[0], dim[1], dim[2], dim[3]);
+  outlineImage.crop(dim[0], dim[1], dim[2], dim[3]);
+  image.write(`./result/${image_name}/4.black_parts_outline.jpg`); // on this path an image is saved showing the advance
+  original.write(`./result/${image_name}/5.testing.jpg`); // on this path an image is saved showing the advance
+  outlineImage.write(`./result/${image_name}/6.outlined.jpg`); // on this path an image is saved showing the advance
+  return outlineImage;
 }
 
 function getVerticalDiameter(image, original) {
