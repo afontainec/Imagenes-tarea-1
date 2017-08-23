@@ -9,8 +9,10 @@ const cropper = require('./cropper');
 function getByColor(image, color, threshold) {
   let distance = getDistanceAllPixels(image, color); // calculate the distance as space point from all pixels to the given color
   distance = normalizeDistance(distance, threshold); // make all distances to be between 0 and 255
+
   image = recolor(image, distance); // what is considered to be the color becames black, all the rest are white.
   image = BFS.paintWhiteHoles(image); // small holes in between are painted black for a less noisy image
+
   return image;
 }
 

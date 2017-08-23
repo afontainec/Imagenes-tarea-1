@@ -108,7 +108,7 @@ exports.removeBackgroud = function (target, binaryImage) {
   return target;
 };
 
-
+/* On the target image it paints a pixel of color color whenever the binaryImage is of color searchColor.*/
 exports.colorWithFilter = function (target, binaryImage, color, searchColor) {
   searchColor = searchColor || colors.BLACK;
   const WIDTH = binaryImage.bitmap.width;
@@ -117,6 +117,22 @@ exports.colorWithFilter = function (target, binaryImage, color, searchColor) {
     for (let j = 0; j < HEIGHT; j++) {
       const binary_color = binaryImage.getPixelColor(i, j);
       if (binary_color === searchColor) {
+        target.setPixelColor(color, i, j);
+      }
+    }
+  }
+  return target;
+};
+
+/* On the target image it paints a pixel of color color whenever the binaryImage is NOT of color searchColor.*/
+exports.colorComplementWithFilter = function (target, binaryImage, color, searchColor) {
+  searchColor = searchColor || colors.BLACK;
+  const WIDTH = binaryImage.bitmap.width;
+  const HEIGHT = binaryImage.bitmap.height;
+  for (let i = 0; i < WIDTH; i++) {
+    for (let j = 0; j < HEIGHT; j++) {
+      const binary_color = binaryImage.getPixelColor(i, j);
+      if (binary_color !== searchColor) {
         target.setPixelColor(color, i, j);
       }
     }

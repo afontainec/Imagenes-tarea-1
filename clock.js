@@ -63,7 +63,6 @@ function getRedBorder(original, image_name) {
   let image = original.clone();
   const RED = [139, 29, 45];
   image = segmenter.getLargestByColor(image, RED, 60, image_name); // get binary image with BLACK whenever the is RED and the rest is white
-
   const dimensions = cropper.getBoundingBox(image, colors.BLACK); // Crop image. only appear the clock
   original.crop(dimensions[0], dimensions[1], dimensions[2], dimensions[3]);
   image.crop(dimensions[0], dimensions[1], dimensions[2], dimensions[3]);
