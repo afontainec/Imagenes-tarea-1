@@ -7,7 +7,7 @@ exports.getHour = function (path, image_name) {
     openImage(path).then((image) => {
       const clock = Clock.get(image, image_name);  // get an image with the clock
       const diameter = Center.find(clock, image_name, image);
-      const segmentedClock = Clock.segment(clock, image_name);
+      // const segmentedClock = Clock.segment(clock, image_name);
       // let handles = Handles.get(image, image_name);
       // handles = Handles.getOrientation(diameter, handles, image_name);
       resolve(clock);
