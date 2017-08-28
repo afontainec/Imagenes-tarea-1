@@ -1,14 +1,9 @@
 const colors = require('./colors');
-const Point = require('./point');
 const cropper = require('./cropper');
-const solve = require('ndarray-linear-solve');
-const ndarray = require('ndarray');
 const math = require('mathjs');
 const Jimp = require('jimp');
-const BFS = require('./BFS');
 
-
-exports.find = function (image, image_name) {
+exports.perspective = function (image, image_name) {
   const image_copy = image.clone();
   cropper.colorComplementWithFilter(image_copy, image, colors.RED, colors.BLUE);
   const top = getTop(image_copy, colors.RED);
@@ -16,9 +11,8 @@ exports.find = function (image, image_name) {
   const left = getLeft(image_copy, colors.RED);
   const right = getRight(image_copy, colors.RED);
   colorCoord(image, image_name, [top, bottom, left, right]);
+  console.log(`${image_name} : getting transformation`);
   const T = getTransformation([top, bottom, left, right], image);
-  console.log('-----------------------------------------------------------------------');
-  console.log(T);
   const transformedImage = transform(T, image, image_name);
   transformedImage.write(`./result/${image_name}/transformed2.jpg`);
   return transformedImage;
@@ -32,31 +26,8 @@ function colorCoord(image, image_name, coord) {
   image.write(`./result/${image_name}/with_coordinate_points.jpg`);
 }
 
-function inverse(T) {
-  const m = math.matrix([
-    [T.a, T.b, T.c],
-    [T.d, T.e, T.f],
-    [0, 0, 1],
-  ]);
-  return math.inv(m);
-}
 
 function transform(T, image) {
-  // const M = inverse(T);
-  // const coor = Math.floor(Math.min(image.bitmap.width / 2, image.bitmap.height / 2));
-  // const newImage = new Jimp(coor * 2, coor * 2, (err, newImage) => {
-  //   const WIDTH = newImage.bitmap.width;
-  //   const HEIGHT = newImage.bitmap.height;
-  //   for (let i = 0; i < WIDTH; i++) {
-  //     for (let j = 0; j < HEIGHT; j++) {
-  //       const V = math.matrix([i, j, 1]);
-  //       const X = math.multiply(M, V);
-  //       const color = image.getPixelColor(parseInt(X._data[0], 10), parseInt(X._data[1], 10)); // eslint-disable-line no-underscore-dangle
-  //       newImage.setPixelColor(color, i, j);
-  //     }
-  //   }
-  // });
-
   const coor = Math.floor(Math.min(image.bitmap.width / 2, image.bitmap.height / 2));
   const newImage = new Jimp(coor * 2, coor * 2, (err, newImage) => {
     const WIDTH = newImage.bitmap.width;
@@ -98,26 +69,6 @@ function getX(T, u, v, y) {
   return (-e * y - f + v * h * y + v) / (d - g * v);
 }
 
-
-function getFirstRow(X, U) {
-  return [X[0], X[1], 1, 0, 0, 0, -X[0] * U[0], X[1] * U[0]];
-}
-
-function getSecondRow(X, U) {
-  return [0, 0, 0, X[0], X[1], 1, -X[0] * U[1], X[1] * U[1]];
-}
-
-function makeVector(final) {
-  const V = [];
-  for (let j = 0; j < final.length; j++) {
-    for (let i = 0; i < 2; i++) {
-      V.push(final[j][i]);
-    }
-  }
-  return V;
-}
-
-
 function computeT(initial, final) {
   const array = [];
   for (let i = 0; i < initial.length; i++) {
@@ -145,29 +96,22 @@ function getTransformation(points, image) {
   return computeT(initialPoints, finalPoints);
 }
 
-
-function getVerticalDiameter(image, original) {
-  const top = getTop(image, colors.BLACK);
-  const bottom = getBottom(image, colors.BLACK);
-  const diameter = paintDiameter(original, top, bottom, colors.PURPLE, colors.RED);
-  return diameter;
+function getFirstRow(X, U) {
+  return [X[0], X[1], 1, 0, 0, 0, -X[0] * U[0], X[1] * U[0]];
 }
 
-function getHorizontalDiameter(image, original) {
-  const left = getLeft(image, colors.BLACK);
-  const right = getRight(image, colors.BLACK);
-  const diameter = paintDiameter(original, left, right, colors.BLUE, colors.YELLOW);
-  return diameter;
+function getSecondRow(X, U) {
+  return [0, 0, 0, X[0], X[1], 1, -X[0] * U[1], X[1] * U[1]];
 }
 
-function paintDiameter(image, p1, p2, mainColor, centerColor) {
-  const diameter = Point.paintLineBetween(image, mainColor, p1, p2);
-  const center = Point.midPoint(p1, p2);
-  image.setPixelColor(centerColor, center[0], center[1]);
-  image.setPixelColor(centerColor, p1[0], p1[1]);
-  image.setPixelColor(centerColor, p2[0], p2[1]);
-  diameter.center = center;
-  return diameter;
+function makeVector(final) {
+  const V = [];
+  for (let j = 0; j < final.length; j++) {
+    for (let i = 0; i < 2; i++) {
+      V.push(final[j][i]);
+    }
+  }
+  return V;
 }
 
 
@@ -270,59 +214,4 @@ function getRight(image, segment_color) {
   }
 
   return [0, 0];
-}
-
-
-exports.massCenter = function (image, image_name) {
-  const timeBlocks = massCenterTimeBlocks(image, image_name);
-  getOpositeSide(timeBlocks, image, image_name);
-  image.write(`./result/${image_name}/massCenter.jpg`);
-};
-
-function getOpositeSide(timeBlocks, image, image_name) {
-  for (let i = 0; i < timeBlocks.length; i++) {
-    const start = timeBlocks[i];
-    let maxDistance = -1;
-    for (let j = 0; j < timeBlocks.length; j++) {
-      const end = timeBlocks[j];
-      const distance = Point.distance(start.massCenter, end.massCenter);
-      if (distance > maxDistance) {
-        maxDistance = distance;
-        start.opposite = end;
-      }
-    }
-  }
-
-  for (let i = 0; i < timeBlocks.length; i++) {
-    if (timeBlocks[i] === timeBlocks[i].opposite.opposite) {
-      const im = image.clone();
-
-      im.setPixelColor(colors.RED, timeBlocks[i].massCenter[0], timeBlocks[i].massCenter[1]);
-      im.setPixelColor(colors.RED, timeBlocks[i].opposite.massCenter[0], timeBlocks[i].opposite.massCenter[1]);
-      console.log('entro');
-      im.write(`./result/${image_name}/massCenter_${i}.jpg`);
-    }
-  }
-}
-
-function massCenterTimeBlocks(image, image_name) {
-  const timeBlocks = BFS.findSegments(image, colors.YELLOW);
-  for (let i = 0; i < timeBlocks.length; i++) {
-    timeBlocks[i].massCenter = getMassCenter(timeBlocks[i]);
-  }
-  return timeBlocks;
-}
-
-
-function getMassCenter(object) {
-  let posI = 0;
-  let posJ = 0;
-  for (let i = 0; i < object.length; i++) {
-    posI += object[i].i;
-    posJ += object[i].j;
-  }
-
-  posI /= object.length;
-  posJ /= object.length;
-  return [posI, posJ];
 }
