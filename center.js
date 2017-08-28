@@ -6,75 +6,59 @@ const cropper = require('./cropper');
 
 
 exports.find = function (image, image_name) {
-  findByMask(image, image_name);
-  // const diameter = findDiameter(image, image_name);
-  // image.write(`./result/${image_name}/with_diameters.jpg`);
+  const params = findDiameter(image, image_name);
+  let timeBlocks = orderTimeBlocks(params.timeBlocks, params.center, image, image_name);
+  timeBlocks = removeOneIfOdd(timeBlocks);
+  image.write(`./result/${image_name}/with_diameters.jpg`);
 };
 
-
-function findByMask(image, image_name) {
-  const resized = image.resize(256, 256);
-  resized.write(`./result/${image_name}/resized.jpg`);
-  const maskSize = 18;
-  operateMask(resized, maskSize);
-  // paintMask(resized, maskSize, 100);
-  resized.write(`./result/${image_name}/mask.jpg`);
+function removeOneIfOdd(timeBlocks) {
+  return timeBlocks;
 }
 
-
-function operateMask(image, mask) {
-  let bestMask = [-1, -1];
-  let minWhite = 10000;
-  for (let jOffset = 0; jOffset < image.bitmap.width; jOffset++) {
-    for (let iOffset = 0; iOffset < image.bitmap.width; iOffset++) {
-      let hasPurple = 0;
-      let hasCyan = 0;
-      let hasWhite = 0;
-
-      for (let i = 0; i < mask; i++) {
-        for (let j = 0; j < mask; j++) {
-          const color = image.getPixelColor(iOffset + i, jOffset + j);
-          if (color === colors.PURPLE) {
-            hasPurple++;
-          }
-          if (color === colors.CYAN) {
-            hasCyan++;
-          }
-          if (color === colors.WHITE) {
-            hasWhite++;
-          }
-        }
-      }
-      if (hasCyan && hasPurple && hasWhite < minWhite) {
-        bestMask = [iOffset, jOffset];
-        minWhite = hasWhite;
-      }
-      if (hasCyan && hasPurple && hasCyan > hasPurple && !hasWhite) {
-        paintMask(image, mask, iOffset, jOffset);
-      }
-    }
+function orderTimeBlocks(timeBlocks, center, image, image_name) {
+  const referenceVector = Point.getVector(center, timeBlocks[0].massCenter);
+  for (let i = 0; i < timeBlocks.length; i++) {
+    const p = timeBlocks[i].massCenter;
+    const vectorI = Point.getVector(center, p);
+    timeBlocks[i].angle = Point.getAngle(referenceVector, vectorI);
   }
-  paintMask(image, mask, bestMask[0], bestMask[1], colors.RED);
-}
-
-function paintMask(image, mask, iOffset, jOffset, color) {
-  const paintingColor = color || colors.BLACK;
-  for (let j = 0; j < mask; j++) {
-    image.setPixelColor(paintingColor, iOffset, jOffset + j);
-    image.setPixelColor(paintingColor, iOffset + (mask - 1), jOffset + j);
-    image.setPixelColor(paintingColor, iOffset + j, jOffset);
-    image.setPixelColor(paintingColor, iOffset + j, jOffset + (mask - 1));
+  timeBlocks.sort((a, b) => {
+    return a.angle - b.angle;
+  });
+  for (let i = 0; i < timeBlocks.length; i++) {
+    const im = image.clone();
+    const p = timeBlocks[i].massCenter;
+    const vectorI = Point.getVector(center, p);
+    Point.drawVector(im, colors.BLUE, vectorI);
+    im.write(`./result/${image_name}/timeblock${i}.jpg`);
   }
+  return timeBlocks;
 }
 
 function findDiameter(image, image_name) {
   const timeBlocks = Mass.center(image, colors.YELLOW);
   const pointImage = timeBlocksToPoints(image, timeBlocks);
-  const diameters = getOpositeSide(timeBlocks, image, image_name);
+  const diameters = getOpositeSide(timeBlocks, pointImage, image_name);
+  const center = averageDiameter(diameters);
+  image.setPixelColor(colors.FULLRED, center[0], center[1]);
+  return {
+    timeBlocks,
+    center,
+  };
+}
+
+function averageDiameter(diameters) {
+  const center = [0, 0];
   for (let i = 0; i < diameters.length; i++) {
     const diameter = diameters[i];
-    paintDiameter(pointImage, diameter.p1, diameter.p2, colors.BLUE, colors.RED);
+    const c = Point.midPoint(diameter.p1, diameter.p2);
+    center[0] += c[0];
+    center[1] += c[1];
   }
+  center[0] /= diameters.length;
+  center[1] /= diameters.length;
+  return center;
 }
 
 function timeBlocksToPoints(image, timeBlocks) {
