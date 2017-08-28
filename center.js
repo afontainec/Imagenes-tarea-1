@@ -3,20 +3,86 @@ const Point = require('./point');
 const Mass = require('./mass');
 const BFS = require('./BFS');
 const cropper = require('./cropper');
+const math = require('mathjs');
 
 
 exports.find = function (image, image_name) {
-  const params = findDiameter(image, image_name);
+  const params = findDiameter(image);
   let timeBlocks = orderTimeBlocks(params.timeBlocks, params.center, image, image_name);
   timeBlocks = removeOneIfOdd(timeBlocks);
-  image.write(`./result/${image_name}/with_diameters.jpg`);
+  const diameters = getAllDiameters(timeBlocks, image);
+  const center = getCenter(diameters, image);
+  image.setPixelColor(colors.FULLRED, center[0], center[1]);
+  image.write(`./result/${image_name}/7.diameters.jpg`);
+  return {
+    diameters,
+    center,
+  };
 };
 
+
+function getCenter(diameters) {
+  const center = [0, 0];
+  let n = 0;
+  for (let i = 0; i < diameters.length; i++) {
+    const line1 = diameters[i];
+    for (let j = 0; j < diameters.length; j++) {
+      if (i !== j) {
+        n++;
+        const line2 = diameters[j];
+        const mid = math.intersect(line1.p1, line1.p2, line2.p1, line2.p2);
+        center[0] += mid[0];
+        center[1] += mid[1];
+      }
+    }
+  }
+  center[0] /= (n);
+  center[1] /= (n);
+  return center;
+}
+
 function removeOneIfOdd(timeBlocks) {
+  if (timeBlocks.length === 12) {
+    return timeBlocks;
+  }
+  const i = biggestAngleChange(timeBlocks);
+  console.log('remover', i);
+  timeBlocks.splice(((i + 1) - 6) % timeBlocks.length, 1);
   return timeBlocks;
 }
 
-function orderTimeBlocks(timeBlocks, center, image, image_name) {
+function getAllDiameters(timeBlocks, image) {
+  const offset = timeBlocks.length / 2;
+  const diameters = [];
+  for (let i = 0; i < offset; i++) {
+    const p1 = timeBlocks[i].massCenter;
+    const p2 = timeBlocks[(i + offset)].massCenter;
+    paintDiameter(image, p1, p2, colors.BLUE, colors.BLUE);
+    diameters.push({
+      p1,
+      p2,
+    });
+  }
+  return diameters;
+}
+
+function biggestAngleChange(timeBlocks) {
+  let maxDiff = -1;
+  let start = -1;
+  for (let i = 0; i < timeBlocks.length; i++) {
+    let difference = timeBlocks[(i + 1) % timeBlocks.length].angle - timeBlocks[i].angle;
+    if (i === timeBlocks.length - 1) {
+      difference = ((2 * Math.PI) - timeBlocks[i].angle) - timeBlocks[(i + 1) % timeBlocks.length].angle;
+    }
+    if (maxDiff < difference) {
+      maxDiff = difference;
+      start = i;
+    }
+  }
+  return start;
+}
+
+function orderTimeBlocks(timeBlocks, center) {
   const referenceVector = Point.getVector(center, timeBlocks[0].massCenter);
   for (let i = 0; i < timeBlocks.length; i++) {
     const p = timeBlocks[i].massCenter;
@@ -26,22 +92,14 @@ function orderTimeBlocks(timeBlocks, center, image, image_name) {
   timeBlocks.sort((a, b) => {
     return a.angle - b.angle;
   });
-  for (let i = 0; i < timeBlocks.length; i++) {
-    const im = image.clone();
-    const p = timeBlocks[i].massCenter;
-    const vectorI = Point.getVector(center, p);
-    Point.drawVector(im, colors.BLUE, vectorI);
-    im.write(`./result/${image_name}/timeblock${i}.jpg`);
-  }
   return timeBlocks;
 }
 
-function findDiameter(image, image_name) {
+function findDiameter(image) {
   const timeBlocks = Mass.center(image, colors.YELLOW);
-  const pointImage = timeBlocksToPoints(image, timeBlocks);
-  const diameters = getOpositeSide(timeBlocks, pointImage, image_name);
+  timeBlocksToPoints(image, timeBlocks);
+  const diameters = getOpositeSide(timeBlocks);
   const center = averageDiameter(diameters);
-  image.setPixelColor(colors.FULLRED, center[0], center[1]);
   return {
     timeBlocks,
     center,
