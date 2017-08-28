@@ -1,17 +1,18 @@
 const colors = require('./colors');
 const Point = require('./point');
 const Mass = require('./mass');
-const BFS = require('./BFS');
 const cropper = require('./cropper');
 const math = require('mathjs');
 
 
 exports.find = function (image, image_name) {
+  console.log(image_name, ':', 'searching center...');
   const params = findDiameter(image);
-  let timeBlocks = orderTimeBlocks(params.timeBlocks, params.center, image, image_name);
-  timeBlocks = removeOneIfOdd(timeBlocks);
+  const timeBlocks = orderTimeBlocks(params.timeBlocks, params.center, image, image_name);
+  const orphanBlock = removeOneIfOdd(timeBlocks);
   const diameters = getAllDiameters(timeBlocks, image);
   const center = getCenter(diameters, image);
+  addOrphan(orphanBlock, center, image);
   image.setPixelColor(colors.FULLRED, center[0], center[1]);
   image.write(`./result/${image_name}/7.diameters.jpg`);
   return {
@@ -19,6 +20,17 @@ exports.find = function (image, image_name) {
     center,
   };
 };
+
+function addOrphan(orphanBlock, center, image) {
+  if (!orphanBlock) {
+    return;
+  }
+  const diameter = Point.getVector(orphanBlock.massCenter, center);
+  diameter[0] *= 2;
+  diameter[1] *= 2;
+  const final = Point.vectorEndPoint(diameter);
+  paintDiameter(image, diameter[2], final, colors.BLUE, colors.BLUE);
+}
 
 
 function getCenter(diameters) {
@@ -43,12 +55,13 @@ function getCenter(diameters) {
 
 function removeOneIfOdd(timeBlocks) {
   if (timeBlocks.length === 12) {
-    return timeBlocks;
+    return;
   }
   const i = biggestAngleChange(timeBlocks);
-  console.log('remover', i);
-  timeBlocks.splice(((i + 1) - 6) % timeBlocks.length, 1);
-  return timeBlocks;
+  const index = ((i + 1) - 6) % timeBlocks.length;
+  const orphan = timeBlocks.slice(index, index + 1)[0];
+  timeBlocks.splice(index, 1);
+  return orphan;
 }
 
 function getAllDiameters(timeBlocks, image) {
@@ -128,20 +141,6 @@ function timeBlocksToPoints(image, timeBlocks) {
 }
 
 
-function getVerticalDiameter(image, original) {
-  const top = getTop(image, colors.YELLOW);
-  const bottom = getBottom(image, colors.YELLOW);
-  const diameter = paintDiameter(original, top, bottom, colors.PURPLE, colors.RED);
-  return diameter;
-}
-
-function getHorizontalDiameter(image, original) {
-  const left = getLeft(image, colors.YELLOW);
-  const right = getRight(image, colors.YELLOW);
-  const diameter = paintDiameter(original, left, right, colors.BLUE, colors.YELLOW);
-  return diameter;
-}
-
 function paintDiameter(image, p1, p2, mainColor, centerColor) {
   const diameter = Point.paintLineBetween(image, mainColor, p1, p2);
   const center = Point.midPoint(p1, p2);
@@ -152,114 +151,6 @@ function paintDiameter(image, p1, p2, mainColor, centerColor) {
   return diameter;
 }
 
-
-// returns the coordinates of the pixel of the middle of the first line of color segment_color
-function getTop(image, segment_color) {
-  const WIDTH = image.bitmap.width;
-  const HEIGHT = image.bitmap.height;
-  let x = 0;
-  let n = 0;
-  let found = false;
-  for (let j = 0; j < HEIGHT; j++) {
-    for (let i = 0; i < WIDTH; i++) {
-      const color = image.getPixelColor(i, j);
-      if (color === segment_color) {
-        image.setPixelColor(colors.PURPLE, i, j);
-        found = true;
-        x += i;
-        n += 1;
-      }
-    }
-    if (found) {
-      x /= n;
-      return [parseInt(x, 10), j];
-    }
-  }
-
-  return [0, 0];
-}
-
-function getBottom(image, segment_color) {
-  const WIDTH = image.bitmap.width;
-  const HEIGHT = image.bitmap.height;
-  let x = 0;
-  let n = 0;
-  let found = false;
-  for (let j = HEIGHT - 1; j >= 0; j--) {
-    for (let i = 0; i < WIDTH; i++) {
-      const color = image.getPixelColor(i, j);
-      if (color === segment_color) {
-        found = true;
-        x += i;
-        n += 1;
-      }
-    }
-    if (found) {
-      x /= n;
-      return [parseInt(x, 10), j];
-    }
-  }
-
-  return [0, 0];
-}
-
-
-// returns the coordinates of the pixel of the middle of the first column of color segment_color
-function getLeft(image, segment_color) {
-  const WIDTH = image.bitmap.width;
-  const HEIGHT = image.bitmap.height;
-  let y = 0;
-  let n = 0;
-  let found = false;
-  for (let i = 0; i < WIDTH; i++) {
-    for (let j = 0; j < HEIGHT; j++) {
-      const color = image.getPixelColor(i, j);
-      if (color === segment_color) {
-        found = true;
-        y += j;
-        n += 1;
-      }
-    }
-    if (found) {
-      y /= n;
-      return [i, parseInt(y, 10)];
-    }
-  }
-
-  return [0, 0];
-}
-
-// returns the coordinates of the pixel of the middle of the last column of color segment_color
-function getRight(image, segment_color) {
-  const WIDTH = image.bitmap.width;
-  const HEIGHT = image.bitmap.height;
-  let y = 0;
-  let n = 0;
-  let found = false;
-  for (let i = WIDTH - 1; i >= 0; i--) {
-    for (let j = 0; j < HEIGHT; j++) {
-      const color = image.getPixelColor(i, j);
-      if (color === segment_color) {
-        found = true;
-        y += j;
-        n += 1;
-      }
-    }
-    if (found) {
-      y /= n;
-      return [i, parseInt(y, 10)];
-    }
-  }
-
-  return [0, 0];
-}
-
-
-exports.massCenter = function (image, image_name) {
-  const timeBlocks = massCenterTimeBlocks(image, image_name);
-  getOpositeSide(timeBlocks, image, image_name);
-  image.write(`./result/${image_name}/massCenter.jpg`);
-};
 
 function getFurtherAway(timeBlocks) {
   for (let i = 0; i < timeBlocks.length; i++) {
@@ -289,26 +180,4 @@ function getOpositeSide(timeBlocks) {
     }
   }
   return opposites;
-}
-
-function massCenterTimeBlocks(image) {
-  const timeBlocks = BFS.findSegments(image, colors.YELLOW);
-  for (let i = 0; i < timeBlocks.length; i++) {
-    timeBlocks[i].massCenter = getMassCenter(timeBlocks[i]);
-  }
-  return timeBlocks;
-}
-
-
-function getMassCenter(object) {
-  let posI = 0;
-  let posJ = 0;
-  for (let i = 0; i < object.length; i++) {
-    posI += object[i].i;
-    posJ += object[i].j;
-  }
-
-  posI /= object.length;
-  posJ /= object.length;
-  return [posI, posJ];
 }

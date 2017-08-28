@@ -76,3 +76,7 @@ exports.getAngle = function (u, v) {
   }
   return angle;
 };
+
+exports.vectorEndPoint = function (v) {
+  return [v[2][0] + v[0], v[2][1] + v[1]];
+};

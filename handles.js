@@ -1,43 +1,58 @@
 const segmenter = require('./segmenter');
+const colors = require('./colors');
+const Point = require('./point');
 
 
-exports.get = function (original, image_name) {
-  // const secHandle = getRedHandle(original, image_name);
-  const handles = getHandles(original, image_name);
-
-  return handles;
+exports.getAsVectors = function (image, center, image_name) {
+  // const handles = getHandles(image, image_name);
+  getHourAndMin(image, center);
+  image.write(`./result/${image_name}/line.jpg`);
 };
 
-exports.getOrientation = function (diameter, image, image_name) {
-  return image;
-};
 
-function getHandles(original, image_name) {
-  const red = getRedHandle(original, image_name);
-  const black = getBlackHandles(original, image_name);
-  const handles = segmenter.merge(red, black); // merge both binary to get all the handles
-  handles.write(`./result/${image_name}/6.Handles.jpg`);  // on this path an image is saved showing the advance
-  console.log('------', `${image_name}: all Handles saved`);
-  return handles;
-}
+function getHourAndMin(image, center) {
+  const n = 12;
+  const j = 6;
+  const points = [];
+  let inPurple = false;
+  let inCyan = false;
+  let inWhite = false;
+  let found = -1;
+  const coord = [];
+  let c = 0;
+  for (let i = 0; i < image.bitmap.height; i++) {
+    const color = image.getPixelColor((j * center[0]) / n, i);
+    switch (color) {
+    case colors.PURPLE:
+      if (!inCyan && !inPurple) {
+        found++;
+        console.log(found);
 
-
-function getRedHandle(original, image_name) {
-  let image = original.clone();
-  const RED = [139, 29, 45];
-  image = segmenter.getLargestByColor(image, RED, 2, image_name); // get binary image with BLACK whenever the is RED and the rest is white
-
-  image.write(`./result/${image_name}/4.Red Handle.jpg`);  // on this path an image is saved showing the advance
-  console.log('------', `${image_name}: Red Handles saved`);
-  return image;
-}
-
-function getBlackHandles(original, image_name) {
-  let image = original.clone();
-  const BLACK = [25, 29, 28];
-  image = segmenter.getLargestByColor(image, BLACK, 3, image_name); // get binary image with BLACK whenever the is RED and the rest is white
-
-  image.write(`./result/${image_name}/5. Black Handles.jpg`);  // on this path an image is saved showing the advance
-  console.log('------', `${image_name}: Black Handles saved`);
-  return image;
+        coord[found] = 0;
+        inPurple = true;
+      }
+      break;
+    case colors.CYAN:
+      inCyan = true;
+      break;
+    case colors.WHITE:
+      if (inPurple) {
+          // do something
+      }
+      inPurple = false;
+      inCyan = false;
+      inWhite = true;
+      break;
+    default:
+      break;
+    }
+    if (inPurple) {
+      coord[found] += i;
+      c++;
+    }
+  }
+  const p = [(j * center[0]) / n, coord[found] / c];
+  const vector = Point.getVector(center, p);
+  Point.paintLineBetween(image, colors.YELLOW, center, p);
+  return vector;
 }
