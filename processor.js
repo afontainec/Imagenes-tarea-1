@@ -7,9 +7,9 @@ exports.getHour = function (path, image_name) {
   return new Promise((resolve, reject) => {
     openImage(path).then((image) => {
       const clock = Clock.get(image, image_name);  // get an image with the clock
-      // const diameter = Center.find(clock, image_name, image);
-      const transformedImage = Transformation.perspective(clock, image_name, image);
-      const segmentedClock = Clock.segment(transformedImage, image_name);
+      const segmentedClock = Clock.segment(clock, image_name);
+      const transformedImage = Transformation.perspective(segmentedClock, image_name);
+      const diameter = Center.find(transformedImage, image_name, image);
 
 
       // let handles = Handles.get(image, image_name);
