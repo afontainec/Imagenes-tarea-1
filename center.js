@@ -6,30 +6,58 @@ const math = require('mathjs');
 
 
 exports.find = function (image, image_name) {
-  console.log(image_name, ':', 'searching center...');
+  console.log(image_name, ':', 'searching center');
   const params = findDiameter(image);
-  const timeBlocks = orderTimeBlocks(params.timeBlocks, params.center, image, image_name);
-  const orphanBlock = removeOneIfOdd(timeBlocks);
-  const diameters = getAllDiameters(timeBlocks, image);
+  let timeBlocks = orderTimeBlocks(params.timeBlocks, params.center, image, image_name);
+  const orphanIndex = removeOneIfOdd(timeBlocks);
+  const diameters = getAllDiameters(timeBlocks, orphanIndex);
   const center = getCenter(diameters, image);
-  addOrphan(orphanBlock, center, image);
+  addOrphan(timeBlocks, center, orphanIndex);
   image.setPixelColor(colors.FULLRED, center[0], center[1]);
-  image.write(`./result/${image_name}/7.diameters.jpg`);
+  timeBlocks = parseTimeBlocks(timeBlocks);
   return {
-    diameters,
+    timeBlocks,
     center,
   };
 };
 
-function addOrphan(orphanBlock, center, image) {
-  if (!orphanBlock) {
+function parseTimeBlocks(timeBlocks) {
+  const array = [];
+  for (let i = 0; i < timeBlocks.length; i++) {
+    array.push({
+      pos: timeBlocks[i].massCenter,
+    });
+  }
+  return array;
+}
+
+
+function printTimeBlock(timeBlock, path, im, color) {
+  im.setPixelColor(color, timeBlock.pos[0] + 1, timeBlock.pos[1]);
+  im.setPixelColor(color, timeBlock.pos[0] - 1, timeBlock.pos[1]);
+  im.setPixelColor(color, timeBlock.pos[0], timeBlock.pos[1]);
+  im.write(path);
+}
+
+exports.print = printTimeBlock;
+
+function addOrphan(timeBlocks, center, orphanIndex) {
+  if (!orphanIndex) {
     return;
   }
+  const orphanBlock = timeBlocks[orphanIndex];
   const diameter = Point.getVector(orphanBlock.massCenter, center);
   diameter[0] *= 2;
   diameter[1] *= 2;
   const final = Point.vectorEndPoint(diameter);
-  paintDiameter(image, diameter[2], final, colors.BLUE, colors.BLUE);
+  if (orphanIndex >= 6) {
+    orphanIndex -= 5;
+  } else {
+    orphanIndex += 6;
+  }
+  timeBlocks.splice(orphanIndex, 0, {
+    massCenter: final,
+  });
 }
 
 
@@ -58,19 +86,27 @@ function removeOneIfOdd(timeBlocks) {
     return;
   }
   const i = biggestAngleChange(timeBlocks);
-  const index = ((i + 1) - 6) % timeBlocks.length;
-  const orphan = timeBlocks.slice(index, index + 1)[0];
-  timeBlocks.splice(index, 1);
-  return orphan;
+  let index = ((i + 1) - 6) % timeBlocks.length;
+  if (index < 0) {
+    index += timeBlocks.length;
+  }
+
+  // const orphan = timeBlocks.slice(index, index + 1)[0];
+  // timeBlocks.splice(index, 1);
+  timeBlocks[index].orphan = true;
+  return index;
 }
 
-function getAllDiameters(timeBlocks, image) {
-  const offset = timeBlocks.length / 2;
+function getAllDiameters(timeBlocks, orphanIndex) {
+  const array = timeBlocks.slice(0, timeBlocks.length);
+  if (orphanIndex !== undefined) {
+    array.splice(orphanIndex, 1);
+  }
+  const offset = array.length / 2;
   const diameters = [];
-  for (let i = 0; i < offset; i++) {
-    const p1 = timeBlocks[i].massCenter;
-    const p2 = timeBlocks[(i + offset)].massCenter;
-    paintDiameter(image, p1, p2, colors.BLUE, colors.BLUE);
+  for (let i = 0; i < array.length / 2; i++) {
+    const p1 = array[i].massCenter;
+    const p2 = array[(i + offset)].massCenter;
     diameters.push({
       p1,
       p2,

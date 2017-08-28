@@ -77,6 +77,17 @@ exports.getAngle = function (u, v) {
   return angle;
 };
 
+exports.getInnerAngle = function (u, v) {
+  const dot = dotProduct(u, v);
+  const lenU = lengthOfVector(u);
+  const lenV = lengthOfVector(v);
+  let angle = math.acos(dot / (lenU * lenV));
+  if (angle < 0) {
+    angle += 2 * Math.PI;
+  }
+  return angle;
+};
+
 exports.vectorEndPoint = function (v) {
   return [v[2][0] + v[0], v[2][1] + v[1]];
 };

@@ -5,8 +5,9 @@ const Point = require('./point');
 
 exports.getAsVectors = function (image, center, image_name) {
   // const handles = getHandles(image, image_name);
-  getHourAndMin(image, center);
-  image.write(`./result/${image_name}/line.jpg`);
+  const vector = getHourAndMin(image, center);
+  image.write(`./result/${image_name}/handle.jpg`);
+  return vector;
 };
 
 
@@ -26,7 +27,6 @@ function getHourAndMin(image, center) {
     case colors.PURPLE:
       if (!inCyan && !inPurple) {
         found++;
-        console.log(found);
 
         coord[found] = 0;
         inPurple = true;
@@ -52,7 +52,7 @@ function getHourAndMin(image, center) {
     }
   }
   const p = [(j * center[0]) / n, coord[found] / c];
-  const vector = Point.getVector(center, p);
-  Point.paintLineBetween(image, colors.YELLOW, center, p);
+  const vector = Point.getVector(p, center);
+  Point.paintLineBetween(image, colors.YELLOW, p, center);
   return vector;
 }

@@ -2,6 +2,7 @@ const Clock = require('./clock');
 const Jimp = require('jimp');
 const TimeBlocks = require('./center');
 const Handles = require('./handles');
+const Time = require('./Time');
 // const Transformation = require('./transformation');
 
 exports.getHour = function (path, image_name) {
@@ -9,8 +10,9 @@ exports.getHour = function (path, image_name) {
     openImage(path).then((image) => {
       const clock = Clock.get(image, image_name);  // get an image with the clock
       const segmentedClock = Clock.segment(clock, image_name);
-      const timeBlocks = TimeBlocks.find(segmentedClock, image_name);
-      const handles = Handles.getAsVectors(segmentedClock, timeBlocks.center, image_name);
+      const points = TimeBlocks.find(segmentedClock, image_name);
+      const handles = Handles.getAsVectors(segmentedClock, points.center, image_name);
+      Time.readHour(segmentedClock, image_name, handles, points);
       resolve(clock);
     }).catch((err) => {
       console.log(err);
