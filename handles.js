@@ -1,15 +1,21 @@
-const segmenter = require('./segmenter');
 const colors = require('./colors');
 const Point = require('./point');
+const Mass = require('./mass');
 
 
 exports.getAsVectors = function (image, center, image_name) {
   // const handles = getHandles(image, image_name);
+  divide(image, center);
   const vector = getHourAndMin(image, center);
   image.write(`./result/${image_name}/handle.jpg`);
   return vector;
 };
 
+
+function divide(image, center) {
+  const p = Mass.center(image, colors.PURPLE);
+  image.paintLineBetween(image, colors.YELLOW, p, center);
+}
 
 function getHourAndMin(image, center) {
   const n = 12;

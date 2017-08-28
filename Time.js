@@ -1,7 +1,6 @@
 const Point = require('./point');
 const colors = require('./colors');
 const TimeBlock = require('./center');
-const Angle = require('./angle');
 
 exports.readHour = function (image, image_name, handle, points) {
   const center = points.center;
@@ -18,7 +17,7 @@ exports.readHour = function (image, image_name, handle, points) {
   image.write(`./result/${image_name}/9.angle.jpg`);
 };
 
-const angleToHour = function (angle, timeBlocks, image) {
+const angleToHour = function (angle, timeBlocks) {
   const between = inBetween(angle, timeBlocks);
   const firstAngle = timeBlocks[between[0]].angle - angle;
   const wholeAngle = timeBlocks[between[0]].angle - timeBlocks[between[1]].angle;

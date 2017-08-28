@@ -12,7 +12,7 @@ exports.getHour = function (path, image_name) {
       const segmentedClock = Clock.segment(clock, image_name);
       const points = TimeBlocks.find(segmentedClock, image_name);
       const handles = Handles.getAsVectors(segmentedClock, points.center, image_name);
-      Time.readHour(segmentedClock, image_name, handles, points);
+      // Time.readHour(segmentedClock, image_name, handles, points);
       resolve(clock);
     }).catch((err) => {
       console.log(err);
