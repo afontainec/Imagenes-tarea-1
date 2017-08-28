@@ -3,11 +3,12 @@ const Point = require('./point');
 const cropper = require('./cropper');
 const solve = require('ndarray-linear-solve');
 const ndarray = require('ndarray');
-const show = require('ndarray-show');
 const math = require('mathjs');
 const Jimp = require('jimp');
+const BFS = require('./BFS');
 
-exports.find = function (image, image_name, original) {
+
+exports.find = function (image, image_name) {
   const image_copy = image.clone();
   cropper.colorComplementWithFilter(image_copy, image, colors.RED, colors.BLUE);
   const top = getTop(image_copy, colors.RED);
@@ -16,8 +17,11 @@ exports.find = function (image, image_name, original) {
   const right = getRight(image_copy, colors.RED);
   colorCoord(image, image_name, [top, bottom, left, right]);
   const T = getTransformation([top, bottom, left, right], image);
+  console.log('-----------------------------------------------------------------------');
   console.log(T);
   const transformedImage = transform(T, image, image_name);
+  transformedImage.write(`./result/${image_name}/transformed2.jpg`);
+  return transformedImage;
 };
 
 function colorCoord(image, image_name, coord) {
@@ -28,27 +32,77 @@ function colorCoord(image, image_name, coord) {
   image.write(`./result/${image_name}/with_coordinate_points.jpg`);
 }
 
-function transform(T, image, image_name) {
+function inverse(T) {
   const m = math.matrix([
     [T.a, T.b, T.c],
     [T.d, T.e, T.f],
     [0, 0, 1],
   ]);
-  const minv = math.inv(m);
+  return math.inv(m);
+}
+
+function transform(T, image) {
+  // const M = inverse(T);
+  // const coor = Math.floor(Math.min(image.bitmap.width / 2, image.bitmap.height / 2));
+  // const newImage = new Jimp(coor * 2, coor * 2, (err, newImage) => {
+  //   const WIDTH = newImage.bitmap.width;
+  //   const HEIGHT = newImage.bitmap.height;
+  //   for (let i = 0; i < WIDTH; i++) {
+  //     for (let j = 0; j < HEIGHT; j++) {
+  //       const V = math.matrix([i, j, 1]);
+  //       const X = math.multiply(M, V);
+  //       const color = image.getPixelColor(parseInt(X._data[0], 10), parseInt(X._data[1], 10)); // eslint-disable-line no-underscore-dangle
+  //       newImage.setPixelColor(color, i, j);
+  //     }
+  //   }
+  // });
+
   const coor = Math.floor(Math.min(image.bitmap.width / 2, image.bitmap.height / 2));
   const newImage = new Jimp(coor * 2, coor * 2, (err, newImage) => {
     const WIDTH = newImage.bitmap.width;
     const HEIGHT = newImage.bitmap.height;
-    for (let i = 0; i < WIDTH; i++) {
-      for (let j = 0; j < HEIGHT; j++) {
-        const V = math.matrix([i, j, 1]);
-        const X = math.multiply(minv, V);
-        const color = image.getPixelColor(parseInt(X._data[0], 10), parseInt(X._data[1], 10)); // eslint-disable-line no-underscore-dangle
-        newImage.setPixelColor(color, i, j);
+    for (let u = 0; u < WIDTH; u++) {
+      for (let v = 0; v < HEIGHT; v++) {
+        const y = getY(T, u, v);
+        const x = getX(T, u, v, y);
+        // console.log(u, ((T[0] * u) + (T[1] * v) + T[2]) / ((T[6] * u) + (T[7] * v) + 1));
+        const color = image.getPixelColor(parseInt(x, 10), parseInt(y, 10)); // eslint-disable-line no-underscore-dangle
+        newImage.setPixelColor(color, u, v);
       }
     }
-    newImage.write(`./result/${image_name}/transformed2.jpg`);
   });
+
+  return newImage;
+}
+
+function getY(T, u, v) {
+  const a = T._data[0]; // eslint-disable-line no-underscore-dangle
+  const b = T._data[1]; // eslint-disable-line no-underscore-dangle
+  const c = T._data[2]; // eslint-disable-line no-underscore-dangle
+  const d = T._data[3]; // eslint-disable-line no-underscore-dangle
+  const e = T._data[4]; // eslint-disable-line no-underscore-dangle
+  const f = T._data[5]; // eslint-disable-line no-underscore-dangle
+  const g = T._data[6]; // eslint-disable-line no-underscore-dangle
+  const h = T._data[7]; // eslint-disable-line no-underscore-dangle
+  // eslint-disable-next-line no-mixed-operators
+  return (a * f - a * v - c * d + c * g * v + d * u - f * g * u) / (-a * e + a * h * v + b * d - b * g * v - d * h * u + e * g * u);
+
+  // return ((T[0] * i) + (T[1] * j) + T[2]) / ((T[6] * i) + (T[7] * i) + 1);
+  // y = -(a x + c - u ( g x + i)) / (b - h u)
+  // y = (-a x - c + u g x + u) / (b - h u)
+
+  // y = (a*f - a*i*v - c*d + c*g*v +d*i*u - f*g*u) / (-a*e+a*h*v+b*d-b*g*v - d*h*u +e*g*u)
+  // x =  (-e y - f + v h y + v) / (d - g v)
+}
+
+function getX(T, u, v, y) {
+  const d = T._data[3]; // eslint-disable-line no-underscore-dangle
+  const e = T._data[4]; // eslint-disable-line no-underscore-dangle
+  const f = T._data[5]; // eslint-disable-line no-underscore-dangle
+  const g = T._data[6]; // eslint-disable-line no-underscore-dangle
+  const h = T._data[7]; // eslint-disable-line no-underscore-dangle
+  // eslint-disable-next-line no-mixed-operators
+  return (-e * y - f + v * h * y + v) / (d - g * v);
 }
 
 function computeBestFitTransformation(I, J) {
@@ -67,13 +121,13 @@ function computeBestFitTransformation(I, J) {
     const B1 = ndarray([Q[0][0], Q[1][0], Q[2][0]]);
     const X1 = ndarray(new Float64Array(3));
     let A = ndarray(data, [3, 3], [1, 3]);
-    const r1 = solve(X1, A, B1);
+    solve(X1, A, B1);
     const B2 = ndarray([Q[0][1], Q[1][1], Q[2][1]]);
     const X2 = ndarray(new Float64Array(3));
     A = ndarray(data, [3, 3], [1, 3]);
 
 
-    const r2 = solve(X2, A, B2);
+    solve(X2, A, B2);
 
     const newP = [(X1.data[0] * I[i][0]) + (X1.data[1] * I[i][1]) + X1.data[2], (X2.data[0] * I[i][0]) + (X2.data[1] * I[i][1]) + X2.data[2]];
     const error = Point.distance(newP, J[i]);
@@ -90,6 +144,45 @@ function computeBestFitTransformation(I, J) {
 }
 
 
+function getFirstRow(X, U) {
+  return [X[0], X[1], 1, 0, 0, 0, -X[0] * U[0], X[1] * U[0]];
+}
+
+function getSecondRow(X, U) {
+  return [0, 0, 0, X[0], X[1], 1, -X[0] * U[1], X[1] * U[1]];
+}
+
+function makeVector(final) {
+  const V = [];
+  for (let j = 0; j < final.length; j++) {
+    for (let i = 0; i < 2; i++) {
+      V.push(final[j][i]);
+    }
+  }
+  return V;
+}
+
+
+function computeT(initial, final) {
+  console.log('COMPUTAR T');
+  console.log('DESDE:', initial);
+  console.log('HASTA:', final);
+  console.log('--------------');
+  const array = [];
+  for (let i = 0; i < initial.length; i++) {
+    array.push(getFirstRow(initial[i], final[i]));
+    array.push(getSecondRow(initial[i], final[i]));
+  }
+  const T = math.matrix(array);
+  const Tinv = math.inv(T);
+  const V = makeVector(final);
+  console.log('vector:', V);
+  console.log('INVERSA DE T', Tinv);
+  const result = math.multiply(Tinv, V);
+  console.log('resultado', result);
+  return result;
+}
+
 function getTransformation(points, image) {
   const coor = Math.floor(Math.min(image.bitmap.width / 2, image.bitmap.height / 2));
   const initialPoints = points;
@@ -99,7 +192,8 @@ function getTransformation(points, image) {
     [0, coor],
     [coor * 2, coor],
   ];
-  return computeBestFitTransformation(initialPoints, finalPoints);
+  // return computeBestFitTransformation(initialPoints, finalPoints);
+  return computeT(initialPoints, finalPoints);
 }
 
 
@@ -227,4 +321,59 @@ function getRight(image, segment_color) {
   }
 
   return [0, 0];
+}
+
+
+exports.massCenter = function (image, image_name) {
+  const timeBlocks = massCenterTimeBlocks(image, image_name);
+  getOpositeSide(timeBlocks, image, image_name);
+  image.write(`./result/${image_name}/massCenter.jpg`);
+};
+
+function getOpositeSide(timeBlocks, image, image_name) {
+  for (let i = 0; i < timeBlocks.length; i++) {
+    const start = timeBlocks[i];
+    let maxDistance = -1;
+    for (let j = 0; j < timeBlocks.length; j++) {
+      const end = timeBlocks[j];
+      const distance = Point.distance(start.massCenter, end.massCenter);
+      if (distance > maxDistance) {
+        maxDistance = distance;
+        start.opposite = end;
+      }
+    }
+  }
+
+  for (let i = 0; i < timeBlocks.length; i++) {
+    if (timeBlocks[i] === timeBlocks[i].opposite.opposite) {
+      const im = image.clone();
+
+      im.setPixelColor(colors.RED, timeBlocks[i].massCenter[0], timeBlocks[i].massCenter[1]);
+      im.setPixelColor(colors.RED, timeBlocks[i].opposite.massCenter[0], timeBlocks[i].opposite.massCenter[1]);
+      console.log('entro');
+      im.write(`./result/${image_name}/massCenter_${i}.jpg`);
+    }
+  }
+}
+
+function massCenterTimeBlocks(image, image_name) {
+  const timeBlocks = BFS.findSegments(image, colors.YELLOW);
+  for (let i = 0; i < timeBlocks.length; i++) {
+    timeBlocks[i].massCenter = getMassCenter(timeBlocks[i]);
+  }
+  return timeBlocks;
+}
+
+
+function getMassCenter(object) {
+  let posI = 0;
+  let posJ = 0;
+  for (let i = 0; i < object.length; i++) {
+    posI += object[i].i;
+    posJ += object[i].j;
+  }
+
+  posI /= object.length;
+  posJ /= object.length;
+  return [posI, posJ];
 }
