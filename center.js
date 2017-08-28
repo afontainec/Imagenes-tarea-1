@@ -6,9 +6,66 @@ const cropper = require('./cropper');
 
 
 exports.find = function (image, image_name) {
-  const diameter = findDiameter(image, image_name);
-  image.write(`./result/${image_name}/with_diameters.jpg`);
+  findByMask(image, image_name);
+  // const diameter = findDiameter(image, image_name);
+  // image.write(`./result/${image_name}/with_diameters.jpg`);
 };
+
+
+function findByMask(image, image_name) {
+  const resized = image.resize(256, 256);
+  resized.write(`./result/${image_name}/resized.jpg`);
+  const maskSize = 18;
+  operateMask(resized, maskSize);
+  // paintMask(resized, maskSize, 100);
+  resized.write(`./result/${image_name}/mask.jpg`);
+}
+
+
+function operateMask(image, mask) {
+  let bestMask = [-1, -1];
+  let minWhite = 10000;
+  for (let jOffset = 0; jOffset < image.bitmap.width; jOffset++) {
+    for (let iOffset = 0; iOffset < image.bitmap.width; iOffset++) {
+      let hasPurple = 0;
+      let hasCyan = 0;
+      let hasWhite = 0;
+
+      for (let i = 0; i < mask; i++) {
+        for (let j = 0; j < mask; j++) {
+          const color = image.getPixelColor(iOffset + i, jOffset + j);
+          if (color === colors.PURPLE) {
+            hasPurple++;
+          }
+          if (color === colors.CYAN) {
+            hasCyan++;
+          }
+          if (color === colors.WHITE) {
+            hasWhite++;
+          }
+        }
+      }
+      if (hasCyan && hasPurple && hasWhite < minWhite) {
+        bestMask = [iOffset, jOffset];
+        minWhite = hasWhite;
+      }
+      if (hasCyan && hasPurple && hasCyan > hasPurple && !hasWhite) {
+        paintMask(image, mask, iOffset, jOffset);
+      }
+    }
+  }
+  paintMask(image, mask, bestMask[0], bestMask[1], colors.RED);
+}
+
+function paintMask(image, mask, iOffset, jOffset, color) {
+  const paintingColor = color || colors.BLACK;
+  for (let j = 0; j < mask; j++) {
+    image.setPixelColor(paintingColor, iOffset, jOffset + j);
+    image.setPixelColor(paintingColor, iOffset + (mask - 1), jOffset + j);
+    image.setPixelColor(paintingColor, iOffset + j, jOffset);
+    image.setPixelColor(paintingColor, iOffset + j, jOffset + (mask - 1));
+  }
+}
 
 function findDiameter(image, image_name) {
   const timeBlocks = Mass.center(image, colors.YELLOW);
