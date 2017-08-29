@@ -5,12 +5,7 @@ const Angle = require('./angle');
 
 
 exports.getAsVectors = function (image, center, image_name) {
-  // const handles = getHandles(image, image_name);
-  // divide(image, center);
-  getHandles(image, center, image_name);
-  // const vector = getHourAndMin(image, center);
-  // image.write(`./result/${image_name}/handle.jpg`);
-  // return vector;
+  return getHandles(image, center, image_name);
 };
 
 
@@ -23,6 +18,10 @@ function getHandles(image, center, image_name) {
   Point.drawVector(image, colors.YELLOW, hourHandle);
   Point.drawVector(image, colors.GREEN, minuteHandle);
   image.write(`./result/${image_name}/handle.jpg`);
+  return {
+    minuteHandle,
+    hourHandle,
+  };
 }
 
 function toStandardForm(handle, center, image) {
