@@ -4,30 +4,48 @@ const TimeBlock = require('./center');
 
 exports.read = function (image, image_name, handle, points) {
   const center = points.center;
-
+  // comparar con una línea vertical para ver el orden de los bloques y cual son las 12
   let comparisonLine = Point.getVector([0, center[1]], center);
+  // registrar el angulo que tienen a la línea
   let timeBlocks = innerAngleToLine(points.timeBlocks, center, comparisonLine);
+  // el con menor ángulo son las 12
   const twelveOclock = getTwelveOclock(timeBlocks);
+  // ahora volvemos a repetir lo anterior, pero con un vector que representa las 12
   comparisonLine = Point.getVector(twelveOclock.pos, center);
   timeBlocks = angleToLine(points.timeBlocks, center, comparisonLine);
-  TimeBlock.print(timeBlocks[0], `./result/${image_name}/8.block0.jpg`, image.clone(), colors.FULLRED);
-  TimeBlock.print(timeBlocks[1], `./result/${image_name}/8.block1.jpg`, image.clone(), colors.FULLRED);
-
+  // imprimimos una foto resaltando las 12.
   TimeBlock.print(twelveOclock, `./result/${image_name}/8.twelveOclock.jpg`, image, colors.FULLRED);
-  console.log('hour');
-  const hour = getHour(timeBlocks, handle.hourHandle, comparisonLine, twelveOclock);
-  console.log('adjusted hour', hour);
-  console.log('minutes');
-  const minutes = getMinutes(timeBlocks, handle.minuteHandle, comparisonLine, twelveOclock);
-  image.write(`./result/${image_name}/9.angle.jpg`);
-  return `${hour}:${minutes}`;
+  const time = getTime(timeBlocks, handle, comparisonLine, twelveOclock);
+  return time;
 };
+
+function getTime(timeBlocks, handle, comparisonLine, twelveOclock) {
+  const hour = getHour(timeBlocks, handle.hourHandle, comparisonLine, twelveOclock);
+  const minutes = getMinutes(timeBlocks, handle.minuteHandle, comparisonLine, twelveOclock);
+  // const minutes = getMinutes(timeBlocks, handle.minuteHandle, comparisonLine, twelveOclock);
+
+  return {
+    hour,
+    minutes,
+  };
+}
 
 function getMinutes(timeBlocks, handle, comparisonLine, twelveOclock) {
   const handleAngle = Point.getAngle(handle, comparisonLine);
-  const closest = angleToHour(handleAngle, timeBlocks, twelveOclock);
-  console.log('final', closest);
-  return 5 * closest;
+  return angleToMinute(handleAngle, timeBlocks, twelveOclock);
+}
+
+function angleToMinute(angle, timeBlocks, twelveOclock) {
+  const between = inBetween(angle, timeBlocks);
+  const firstAngle = timeBlocks[between[0]].angle - angle;
+  const wholeAngle = timeBlocks[between[0]].angle - timeBlocks[between[1]].angle;
+  let base = between[0];
+  base = adjustHour(base, timeBlocks, twelveOclock);
+  base *= 5;
+  let offset = 5 * (firstAngle / wholeAngle);
+  offset = parseInt(offset, 10);
+  const minutes = base + offset;
+  return minutes;
 }
 
 function getHour(timeBlocks, handle, comparisonLine, twelveOclock) {
